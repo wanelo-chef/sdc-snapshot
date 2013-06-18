@@ -2,9 +2,9 @@
 
 export SSH_AUTH_SOCK=/dev/null
 MACHINE=`zonename`
-ACCOUNT="#{node[:sdc][:account_name]}"
-API_ENDPOINT="#{node[:sdc][:api_endpoint]}"
-SNAPSHOT_RETENTION_COUNT="#node{[:sdc][:snapshot_retention_count]}"
+ACCOUNT="<%= node['sdc']['account_name'] %>"
+API_ENDPOINT="<%= node['sdc']['api_endpoint'] %>"
+SNAPSHOT_RETENTION_COUNT="<%= node['sdc']['snapshot_retention_count'] %>"
 OLDEST_SNAPSHOT=`sdc-listmachinesnapshots --account $ACCOUNT --identity ~/sdc-snapshot --keyId "sdc-snapshot" --url "$API_ENDPOINT" $MACHINE | grep name | head -n1 | awk 'BEGIN{FS="\""}{print $4}'`
 
 ## functions

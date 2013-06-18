@@ -17,12 +17,14 @@
 # limitations under the License.
 #
 
+include_recipe "sdc::api_client"
+
 template "#{node[:sdc][:install_path]}/sdc-snapshot" do
   source "sdc-snapshot.erb"
   mode "0755"
 end
 
 cron "snapshot the machine every 15 minutes and deletes older snapshots" do
-  minute "0,15,45"
+  minute "0,15,30,45"
   command "#{node[:sdc][:install_path]}/sdc-snapshot 2>&1 >> /var/log/sdc-snapshot.log"
 end
