@@ -1,4 +1,4 @@
-name             'sdc-snapshots'
+name             'sdc-snapshot'
 maintainer       'Wanelo, Inc.'
 maintainer_email 'bixu@wanelo.com'
 license          'Apache 2.0'

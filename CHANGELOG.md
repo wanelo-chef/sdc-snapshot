@@ -1,4 +1,4 @@
-# CHANGELOG for sdc-snapshots
+# CHANGELOG for sdc-snapshot
 
 This file is used to list changes made in each version of sdc-snapshots.
 
