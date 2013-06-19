@@ -1,23 +1,23 @@
 #!/bin/bash
 
 export SSH_AUTH_SOCK=/dev/null
+export SDC_ACCOUNT="<%= node['sdc']['account_name'] %>"
+export SDC_URL="<%= node['sdc']['api_endpoint'] %>"
+export SDC_KEY_ID=`ssh-keygen -l -f ~/.ssh/sdc-snapshot.pub | awk '{print $2}' | tr -d '\n'`
+
 MACHINE=`zonename`
-ACCOUNT="<%= node['sdc']['account_name'] %>"
-API_ENDPOINT="<%= node['sdc']['api_endpoint'] %>"
-SNAPSHOT_RETENTION_COUNT="<%= node['sdc']['snapshot_retention_count'] %>"
-OLDEST_SNAPSHOT=`sdc-listmachinesnapshots --account $ACCOUNT --identity ~/sdc-snapshot --keyId "sdc-snapshot" --url "$API_ENDPOINT" $MACHINE | grep name | head -n1 | awk 'BEGIN{FS="\""}{print $4}'`
 
 ## functions
 count_snapshots () {
-SNAPSHOT_COUNT=`sdc-listmachinesnapshots --account $ACCOUNT --identity ~/sdc-snapshot --keyId "sdc-snapshot" --url "$API_ENDPOINT" $MACHINE | grep -c "\"state\": \"created\""`
+SNAPSHOT_COUNT=`sdc-listmachinesnapshots --debug --identity /root/.ssh/<%= node['sdc']['key_name'] %> --keyId $SDC_KEY_ID $MACHINE | grep state | grep -c created`
 }
 
 create_snapshot () {
-  sdc-createmachinesnapshot --account $ACCOUNT --identity ~/sdc-snapshots --keyId "sdc-snapshots" --url "$API_ENDPOINT" --machine $MACHINE
+  sdc-createmachinesnapshot --debug --identity /root/.ssh/<%= node['sdc']['key_name'] %> --keyId "$SDC_KEY_ID" --machine $MACHINE
 }
 
 oldest_snapshots () {
-  sdc-listmachinesnapshots --account $ACCOUNT --identity ~/sdc-snapshots --keyId sdc-snapshots --url "$API_ENDPOINT" $MACHINE | grep -B 1 "\"state\": \"created\"" | grep "\name\"" | tac | tail +10 | awk 'BEGIN{FS="\""}{print $4}'
+  sdc-listmachinesnapshots --debug --identity /root/.ssh/<%= node['sdc']['key_name'] %> --keyId "$SDC_KEY_ID" $MACHINE | grep -B 1 "\"state\": \"created\"" | grep "\name\"" | tac | tail +10 | awk 'BEGIN{FS="\""}{print $4}'
 
 }
 
@@ -26,18 +26,19 @@ delete_oldest_snapshots () {
     do
       echo "deleting snapshot $snapshot..."
       sleep 2
-      sdc-deletemachinesnapshot --account $ACCOUNT --identity ~/sdc-snapshots --keyId "sdc-snapshots" --url "$API_ENDPOINT" --name "$snapshot" --machine $MACHINE
+      sdc-deletemachinesnapshot --debug --identity /root/.ssh/<%= node['sdc']['key_name'] %> --keyId "$SDC_KEY_ID" --name "$snapshot" --machine $MACHINE
     done
 }
 
 ## create a new snapshot, deleting the oldest if we have reached our limit
 count_snapshots
-while [ $SNAPSHOT_COUNT -ge $SNAPSHOT_RETENTION_COUNT ]
-do
-  count_snapshots
-  delete_oldest_snapshots
-  sleep 1
-  count_snapshots
-done
+
+while [ $SNAPSHOT_COUNT -ge <%= node['sdc']['snapshot_retention_count'] %> ]
+  do
+    count_snapshots
+    delete_oldest_snapshots
+    sleep 1
+    count_snapshots
+  done
 
 create_snapshot
