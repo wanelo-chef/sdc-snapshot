@@ -24,6 +24,11 @@ template "#{node[:sdc][:install_path]}/sdc-snapshot" do
   mode "0755"
 end
 
+template "#{node[:sdc][:install_path]}/sdc-listsnapshots" do
+  source "sdc-listsnapshots.erb"
+  mode "0755"
+end
+
 cron "snapshot the machine every 15 minutes and deletes older snapshots" do
   minute "0,15,30,45"
   command "#{node[:sdc][:install_path]}/sdc-snapshot 2>&1 >> /var/log/sdc-snapshot.log"
