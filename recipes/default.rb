@@ -19,17 +19,18 @@
 
 include_recipe "sdc::api_client"
 
-template "#{node[:sdc][:install_path]}/sdc-snapshot" do
+template "#{node['sdc']['install_path']}/sdc-snapshot" do
   source "sdc-snapshot.erb"
   mode "0755"
 end
 
-template "#{node[:sdc][:install_path]}/sdc-listsnapshots" do
+template "#{node['sdc']['install_path']}/sdc-listsnapshots" do
   source "sdc-listsnapshots.erb"
   mode "0755"
 end
 
 cron "snapshot the machine every 15 minutes and deletes older snapshots" do
   minute "0,15,30,45"
-  command "#{node[:sdc][:install_path]}/sdc-snapshot 2>&1 >> /var/log/sdc-snapshot.log"
+  command "#{node['sdc']['install_path']}/sdc-snapshot 2>&1 >> /var/log/sdc-snapshot.log"
+  only_if "ls /root/.ssh/#{node['sdc']['key_name']}"
 end
