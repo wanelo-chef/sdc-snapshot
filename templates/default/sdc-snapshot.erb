@@ -29,7 +29,7 @@ delete_oldest_snapshots () {
     done
 }
 
-## create a new snapshot, deleting the oldest if we have reached our limit
+## delete all but the $MAX_SNAPSHOTS most recent snapshots and create a new one
 count_snapshots
 
 while [ $SNAPSHOT_COUNT -ge $MAX_SNAPSHOTS ]
@@ -37,12 +37,5 @@ while [ $SNAPSHOT_COUNT -ge $MAX_SNAPSHOTS ]
     delete_oldest_snapshots
     SNAPSHOT_COUNT=$(($SNAPSHOT_COUNT - 1))
   done
-
-count_snapshots
-
-if [ $SNAPSHOT_COUNT -ge $MAX_SNAPSHOTS ]; then
-  echo "still have $SNAPSHOT_COUNT snapshots remaining... expected them to be at $MAX_SNAPSHOTS."
-  exit 1
-fi
 
 create_snapshot
