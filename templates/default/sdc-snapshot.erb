@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 export SSH_AUTH_SOCK=/dev/null
 export SDC_ACCOUNT="<%= node['sdc']['account_name'] %>"
 export SDC_URL="<%= node['sdc']['api_endpoint'] %>"
@@ -10,15 +12,15 @@ MACHINE=`zonename`
 
 ## functions
 count_snapshots () {
-  SNAPSHOT_COUNT=`sdc-listmachinesnapshots --debug --keyId $SDC_KEY_ID $MACHINE | grep state | grep -c created`
+  SNAPSHOT_COUNT=`sdc-listmachinesnapshots --keyId $SDC_KEY_ID $MACHINE | grep state | grep -c created`
 }
 
 create_snapshot () {
-  sdc-createmachinesnapshot --debug --keyId "$SDC_KEY_ID" --machine $MACHINE
+  sdc-createmachinesnapshot --keyId "$SDC_KEY_ID" --machine $MACHINE
 }
 
 oldest_snapshots () {
-  sdc-listmachinesnapshots --debug --keyId "$SDC_KEY_ID" $MACHINE | grep -B 1 "\"state\": \"created\"" | grep "\name\"" | tac | tail +10 | awk 'BEGIN{FS="\""}{print $4}'
+  sdc-listmachinesnapshots --keyId "$SDC_KEY_ID" $MACHINE | grep -B 1 "\"state\": \"created\"" | grep "\name\"" | tac | tail +10 | awk 'BEGIN{FS="\""}{print $4}'
 }
 
 delete_oldest_snapshots () {
