@@ -12,7 +12,9 @@ MACHINE=`zonename`
 
 ## functions
 count_snapshots () {
+  set +e
   SNAPSHOT_COUNT=`sdc-listmachinesnapshots --keyId $SDC_KEY_ID $MACHINE | grep state | grep -c created`
+  set -e
 }
 
 create_snapshot () {
@@ -20,11 +22,14 @@ create_snapshot () {
 }
 
 oldest_snapshots () {
-  sdc-listmachinesnapshots --keyId "$SDC_KEY_ID" $MACHINE | grep -B 1 "\"state\": \"created\"" | grep "\name\"" | tac | tail +10 | awk 'BEGIN{FS="\""}{print $4}'
+  set +e
+  OLDEST_SNAPSHOTS=sdc-listmachinesnapshots --keyId "$SDC_KEY_ID" $MACHINE | grep -B 1 "\"state\": \"created\"" | grep "\name\"" | tac | tail +10 | awk 'BEGIN{FS="\""}{print $4}'
+  set -e
 }
 
 delete_oldest_snapshots () {
-  for snapshot in `oldest_snapshots`
+  oldest_snapshots
+  for snapshot in $OLDEST_SNAPSHOTS
     do
       echo "[`date`] deleting snapshot $snapshot..."
       sdc-deletemachinesnapshot --debug --keyId "$SDC_KEY_ID" --snapshot "$snapshot" $MACHINE
