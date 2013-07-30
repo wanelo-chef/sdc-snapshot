@@ -24,7 +24,7 @@ create_snapshot () {
 
 oldest_snapshots () {
   set +e
-  OLDEST_SNAPSHOTS=sdc-listmachinesnapshots --keyId "$SDC_KEY_ID" $MACHINE | grep -B 1 "\"state\": \"created\"" | grep "\name\"" | tac | tail +10 | awk 'BEGIN{FS="\""}{print $4}'
+  OLDEST_SNAPSHOTS=`sdc-listmachinesnapshots --keyId "$SDC_KEY_ID" $MACHINE | grep -B 1 "\"state\": \"created\"" | grep "\name\"" | tac | tail +10 | awk 'BEGIN{FS="\""}{print $4}'`
   set -e
 }
 
