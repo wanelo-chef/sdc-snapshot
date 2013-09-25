@@ -19,7 +19,7 @@ count_snapshots () {
 }
 
 create_snapshot () {
-  sdc-createmachinesnapshot --keyId "$SDC_KEY_ID" --machine $MACHINE
+  sdc-createmachinesnapshot --keyId "$SDC_KEY_ID" --machine $MACHINE | grep name | awk 'BEGIN{FS="\""}{print $4}'
 }
 
 oldest_snapshots () {
