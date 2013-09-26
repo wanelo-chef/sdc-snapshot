@@ -32,7 +32,7 @@ delete_oldest_snapshots () {
   oldest_snapshots
   for snapshot in $OLDEST_SNAPSHOTS
     do
-      echo "[`date`] deleting snapshot $snapshot..."
+      echo "[`date`] deleting snapshot $snapshot..." >> /var/log/sdc-snapshot.log
       sdc-deletemachinesnapshot --debug --keyId "$SDC_KEY_ID" --snapshot "$snapshot" $MACHINE
     done
 }
@@ -56,5 +56,5 @@ while [ $SNAPSHOT_COUNT -ge $MAX_SNAPSHOTS ]
 
 check_free_space
 
-echo "[`date`] creating snapshot..."
+echo "[`date`] creating snapshot..." >> /var/log/sdc-snapshot.log
 create_snapshot
