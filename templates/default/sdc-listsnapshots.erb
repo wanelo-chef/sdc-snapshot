@@ -3,7 +3,7 @@
 export SSH_AUTH_SOCK=/dev/null
 export SDC_ACCOUNT="<%= node['sdc']['account_name'] %>"
 export SDC_URL="<%= node['sdc']['api_endpoint'] %>"
-export SDC_KEY_ID=`ssh-keygen -l -f ~/.ssh/sdc-snapshot.pub | awk '{print $2}' | tr -d '\n'`
+export SDC_KEY_ID=`ssh-keygen -l -f $HOME/.ssh/sdc-snapshot.pub | awk '{print $2}' | tr -d '\n'`
 
 MACHINE=`zonename`
 

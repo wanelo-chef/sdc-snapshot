@@ -1,60 +1,61 @@
 #!/bin/bash
+#
+# This script will delete all oldest snapshots except $SNAPSHOTS_TO_KEEP most recent.
+# It will not create new snapshots if there is less than $MIN_FREE_MB Mb left on /
+# because snapshots take up disk space.
+#
+# $MIN_FREE_MB and $SNAPSHOTS_TO_KEEP can be overridden before running the script, ie:
+# MIN_FREE_MB=750000 SNAPSHOTS_TO_KEEP=20 ./sdc-snapshot
+#
 
-set -e
+set -o errexit
+set -o pipefail
+set -o errtrace
 
 export SSH_AUTH_SOCK=/dev/null
 export SDC_ACCOUNT="<%= node['sdc']['account_name'] %>"
 export SDC_URL="<%= node['sdc']['api_endpoint'] %>"
-export SDC_KEY_ID=`ssh-keygen -l -f ~/.ssh/sdc-snapshot.pub | awk '{print $2}' | tr -d '\n'`
-export MAX_SNAPSHOTS=10
-export MIN_FREE=500000  # 500Gb
+export SDC_KEY_ID=`ssh-keygen -l -f $HOME/.ssh/sdc-snapshot.pub | awk '{print $2}' | tr -d '\n'`
+export SNAPSHOTS_TO_KEEP=${SNAPSHOTS_TO_KEEP:-10}
+export MIN_FREE_MB=${MIN_FREE_MB:-750000}  # 750Gb
 
 MACHINE=`zonename`
 
 ## functions
-count_snapshots () {
-  set +e
-  SNAPSHOT_COUNT=`sdc-listmachinesnapshots --keyId $SDC_KEY_ID $MACHINE | grep state | grep -c created`
-  set -e
+say () {
+  echo "[`date`] $1"
 }
 
 create_snapshot () {
+  echo -n "[`date`] creating snapshot "
   sdc-createmachinesnapshot --keyId "$SDC_KEY_ID" --machine $MACHINE | grep name | awk 'BEGIN{FS="\""}{print $4}'
 }
 
 oldest_snapshots () {
-  set +e
-  OLDEST_SNAPSHOTS=`sdc-listmachinesnapshots --keyId "$SDC_KEY_ID" $MACHINE | grep -B 1 "\"state\": \"created\"" | grep "\name\"" | tac | tail +10 | awk 'BEGIN{FS="\""}{print $4}'`
-  set -e
+  say "looking for old snapshots..."
+  OLDEST_SNAPSHOTS=`sdc-listmachinesnapshots --keyId "$SDC_KEY_ID" $MACHINE | grep -B 1 "\"state\": \"created\"" | grep "\name\"" | tac | tail +$SNAPSHOTS_TO_KEEP | awk 'BEGIN{FS="\""}{print $4}'`
 }
 
 delete_oldest_snapshots () {
   oldest_snapshots
-  for snapshot in $OLDEST_SNAPSHOTS
-    do
-      echo "[`date`] deleting snapshot $snapshot..." >> /var/log/sdc-snapshot.log
-      sdc-deletemachinesnapshot --debug --keyId "$SDC_KEY_ID" --snapshot "$snapshot" $MACHINE
-    done
+  for snapshot in $OLDEST_SNAPSHOTS; do
+    say "deleting old snapshot $snapshot..."
+    sdc-deletemachinesnapshot --debug --keyId "$SDC_KEY_ID" --snapshot "$snapshot" $MACHINE
+  done
 }
 
 check_free_space () {
   FREE=`df -m / | tail -1| awk '{print $4}'`
-  if [ $FREE -lt $MIN_FREE ]; then
-    echo "not enough free space left for snapshots, giving up! Need ${MIN_FREE}Mb, have ${FREE}Mb"
+  if [ $FREE -lt $MIN_FREE_MB ]; then
+    say "not enough free space left for snapshots, giving up! Need ${MIN_FREE_MB}Mb, have ${FREE}Mb"
     exit 1
   fi
 }
 
-## delete all but the $MAX_SNAPSHOTS most recent snapshots and create a new one
-count_snapshots
+say "snapshotting starting"
 
-while [ $SNAPSHOT_COUNT -ge $MAX_SNAPSHOTS ]
-  do
-    delete_oldest_snapshots
-    SNAPSHOT_COUNT=$(($SNAPSHOT_COUNT - 1))
-  done
-
+delete_oldest_snapshots
 check_free_space
-
-echo "[`date`] creating snapshot..." >> /var/log/sdc-snapshot.log
 create_snapshot
+
+say "snapshotting finished"
