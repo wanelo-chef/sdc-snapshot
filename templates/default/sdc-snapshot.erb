@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# This script will delete all oldest snapshots except $SNAPSHOTS_TO_KEEP most recent.
-# It will not create new snapshots if there is less than $MIN_FREE_MB Mb left on /
+# This script will delete all oldest snapshots except $RETENTION_COUNT most recent.
+# It will not create new snapshots if there is less than $MIN_FREE_GB Mb left on /
 # because snapshots take up disk space.
 #
-# $MIN_FREE_MB and $SNAPSHOTS_TO_KEEP can be overridden before running the script, ie:
-# MIN_FREE_MB=750000 SNAPSHOTS_TO_KEEP=20 ./sdc-snapshot
+# $MIN_FREE_GB and $RETENTION_COUNT can be overridden before running the script, ie:
+# MIN_FREE_GB=750 RETENTION_COUNT=20 ./sdc-snapshot
 #
 
 set -e
@@ -14,9 +14,9 @@ export SSH_AUTH_SOCK=/dev/null
 export SDC_ACCOUNT="<%= node['sdc']['account_name'] %>"
 export SDC_URL="<%= node['sdc']['api_endpoint'] %>"
 export SDC_KEY_ID=`ssh-keygen -l -f $HOME/.ssh/sdc-snapshot.pub | awk '{print $2}' | tr -d '\n'`
-export SNAPSHOTS_TO_KEEP=${SNAPSHOTS_TO_KEEP:-10}
-export MIN_FREE_MB=${MIN_FREE_MB:-750000}  # 750Gb
 
+RETENTION_COUNT=${RETENTION_COUNT:-10}
+MIN_FREE_GB=${MIN_FREE_GB:-750}
 MACHINE=`zonename`
 
 ## functions
@@ -25,13 +25,14 @@ say () {
 }
 
 create_snapshot () {
+  SNAPSHOT_NAME=$(date +"%Y%m%d-%H%M%S%Z")
   echo -n "[`date`] creating snapshot "
-  sdc-createmachinesnapshot --keyId "$SDC_KEY_ID" --machine $MACHINE | grep name | awk 'BEGIN{FS="\""}{print $4}'
+  sdc-createmachinesnapshot --keyId "$SDC_KEY_ID" --machine $MACHINE --name $SNAPSHOT_NAME | grep name | awk 'BEGIN{FS="\""}{print $4}'
 }
 
 oldest_snapshots () {
   say "looking for old snapshots..."
-  OLDEST_SNAPSHOTS=`sdc-listmachinesnapshots --keyId "$SDC_KEY_ID" $MACHINE | grep -B 1 "\"state\": \"created\"" | grep "\name\"" | tac | tail +$SNAPSHOTS_TO_KEEP | awk 'BEGIN{FS="\""}{print $4}'`
+  OLDEST_SNAPSHOTS=`sdc-listmachinesnapshots --keyId "$SDC_KEY_ID" $MACHINE | grep -B 1 "\"state\": \"created\"" | grep "\name\"" | tac | tail +$RETENTION_COUNT | awk 'BEGIN{FS="\""}{print $4}'`
 }
 
 delete_oldest_snapshots () {
@@ -46,8 +47,8 @@ check_free_space () {
   set -o pipefail
   FREE=`df -m / | tail -1| awk '{print $4}'`
   set +o pipefail
-  if [ $FREE -lt $MIN_FREE_MB ]; then
-    say "not enough free space left for snapshots, giving up! Need ${MIN_FREE_MB}Mb, have ${FREE}Mb"
+  if [ $FREE -lt $((MIN_FREE_GB * 1024)) ]; then
+    say "not enough free space left for snapshots, giving up! Need ${MIN_FREE_GB}Gb, have $((FREE / 1024))Gb"
     exit 1
   fi
 }

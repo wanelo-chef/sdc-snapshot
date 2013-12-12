@@ -9,6 +9,6 @@ Joyent's public cloud portal into `/root/.ssh/sdc-snapshot.pub`
 Example:
 
 ```bash
-SNAPSHOTS_TO_KEEP=5 MIN_FREE_MB=750000 /opt/local/bin/sdc-snapshot
+RETENTION_COUNT=5 MIN_FREE_GB=750 /opt/local/bin/sdc-snapshot
 ```
 
