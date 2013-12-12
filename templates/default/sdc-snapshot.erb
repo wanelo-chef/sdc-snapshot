@@ -8,9 +8,7 @@
 # MIN_FREE_MB=750000 SNAPSHOTS_TO_KEEP=20 ./sdc-snapshot
 #
 
-set -o errexit
-set -o pipefail
-set -o errtrace
+set -e
 
 export SSH_AUTH_SOCK=/dev/null
 export SDC_ACCOUNT="<%= node['sdc']['account_name'] %>"
@@ -45,7 +43,9 @@ delete_oldest_snapshots () {
 }
 
 check_free_space () {
+  set -o pipefail
   FREE=`df -m / | tail -1| awk '{print $4}'`
+  set +o pipefail
   if [ $FREE -lt $MIN_FREE_MB ]; then
     say "not enough free space left for snapshots, giving up! Need ${MIN_FREE_MB}Mb, have ${FREE}Mb"
     exit 1
