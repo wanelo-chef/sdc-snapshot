@@ -32,7 +32,7 @@ create_snapshot () {
 
 oldest_snapshots () {
   say "looking for old snapshots..."
-  OLDEST_SNAPSHOTS=`sdc-listmachinesnapshots --keyId "$SDC_KEY_ID" $MACHINE | grep -B 1 "\"state\": \"created\"" | grep "\name\"" | tac | tail +$RETENTION_COUNT | awk 'BEGIN{FS="\""}{print $4}'`
+  OLDEST_SNAPSHOTS=`sdc-listmachinesnapshots --keyId "$SDC_KEY_ID" $MACHINE | grep -B 1 "\"state\": \"created\"" | grep "\name\"" | sort -r | tail +$RETENTION_COUNT | awk 'BEGIN{FS="\""}{print $4}'`
 }
 
 delete_oldest_snapshots () {
